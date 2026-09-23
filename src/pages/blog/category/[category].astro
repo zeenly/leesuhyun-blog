@@ -1,0 +1,37 @@
+---
+import { getCollection } from "astro:content";
+import Layout from "@layouts/Layout.astro";
+import Container from "@components/Container.astro";
+import CategoryFilter from "@components/CategoryFilter.astro";
+import PostsByYear from "@components/PostsByYear.astro";
+import { CATEGORIES } from "@consts";
+
+export async function getStaticPaths() {
+  const posts = await getCollection("blog", ({ data }) => !data.draft);
+
+  // Every category gets a page, even before it has posts, so header links never 404.
+  return CATEGORIES.map((category) => ({
+    params: { category: category.toLowerCase() },
+    props: {
+      category,
+      posts: posts.filter((post) => post.data.category === category),
+    },
+  }));
+}
+
+const { category, posts } = Astro.props;
+---
+
+<Layout title={category} description={`${category} 카테고리의 글`}>
+  <Container>
+    <aside data-pagefind-ignore>
+      <div class="space-y-10">
+        <CategoryFilter active={category} />
+        <h1 class="animate font-semibold text-heading">
+          {category}
+        </h1>
+        <PostsByYear posts={posts} />
+      </div>
+    </aside>
+  </Container>
+</Layout>

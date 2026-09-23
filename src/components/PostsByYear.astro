@@ -1,0 +1,52 @@
+---
+import type { CollectionEntry } from "astro:content";
+import ArrowCard from "@components/ArrowCard.astro";
+
+type Props = {
+  posts: CollectionEntry<"blog">[];
+};
+
+const { posts } = Astro.props;
+
+type Acc = {
+  [year: string]: CollectionEntry<"blog">[];
+};
+
+const postsByYear = [...posts]
+  .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf())
+  .reduce((acc: Acc, post) => {
+    const year = post.data.date.getFullYear().toString();
+    if (!acc[year]) {
+      acc[year] = [];
+    }
+    acc[year].push(post);
+    return acc;
+  }, {});
+
+const years = Object.keys(postsByYear).sort(
+  (a, b) => parseInt(b) - parseInt(a),
+);
+---
+
+<div class="space-y-4">
+  {
+    years.length === 0 ? (
+      <p class="animate">아직 글이 없습니다.</p>
+    ) : (
+      years.map((year) => (
+        <section class="animate space-y-4">
+          <div class="font-semibold text-heading">{year}</div>
+          <div>
+            <ul class="not-prose flex flex-col gap-4">
+              {postsByYear[year].map((post) => (
+                <li>
+                  <ArrowCard entry={post} />
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+      ))
+    )
+  }
+</div>

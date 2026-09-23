@@ -1,6 +1,7 @@
 import { defineCollection } from "astro:content";
 import { z } from "astro/zod";
 import { glob } from 'astro/loaders';
+import { CATEGORIES } from "./consts";
 
 const blog = defineCollection({
   // Top-level entries starting with "_" (e.g. _template) are excluded from the build.
@@ -9,6 +10,7 @@ const blog = defineCollection({
     title: z.string(),
     description: z.string(),
     date: z.coerce.date(),
+    category: z.enum(CATEGORIES),
     draft: z.boolean().optional(),
     tags: z.array(z.string()).optional(),
   }),

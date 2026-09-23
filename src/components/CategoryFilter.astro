@@ -1,0 +1,36 @@
+---
+import { CATEGORIES } from "@consts";
+import { categoryHref, cn } from "@lib/utils";
+
+type Props = {
+  active?: string;
+};
+
+const { active } = Astro.props;
+
+const linkClass =
+  "rounded-sm border px-2 py-1 transition-colors duration-300 ease-in-out hover:bg-foreground/5 hover:text-heading focus-visible:bg-foreground/5 focus-visible:text-heading";
+const activeClass = "border-accent bg-accent/10 font-semibold text-accent";
+const inactiveClass = "border-foreground/15";
+---
+
+<nav aria-label="Categories" class="animate flex flex-wrap gap-2 text-sm">
+  <a
+    href="/blog"
+    aria-current={active ? undefined : "page"}
+    class={cn(linkClass, active ? inactiveClass : activeClass)}
+  >
+    All
+  </a>
+  {
+    CATEGORIES.map((category) => (
+      <a
+        href={categoryHref(category)}
+        aria-current={active === category ? "page" : undefined}
+        class={cn(linkClass, active === category ? activeClass : inactiveClass)}
+      >
+        {category}
+      </a>
+    ))
+  }
+</nav>

@@ -1,3 +1,4 @@
+import type { Category } from "@consts";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 
@@ -18,4 +19,8 @@ export function readingTime(html: string) {
   const wordCount = textOnly.split(/\s+/).length;
   const readingTimeMinutes = (wordCount / 200 + 1).toFixed();
   return `${readingTimeMinutes} min read`;
+}
+
+export function categoryHref(category: Category) {
+  return `/blog/category/${category.toLowerCase()}`;
 }
