@@ -9,6 +9,25 @@
     'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
   --font-mono: Geist Mono, ui-monospace, SFMono-Regular, Menlo, Monaco,
     Consolas, 'Liberation Mono', 'Courier New', monospace;
+
+  /*
+    Site color tokens (light values). Dark values are set on `.dark` below,
+    so utilities like `bg-background` or `text-heading` switch automatically
+    and don't need a `dark:` variant.
+  */
+  --color-background: #f4efe6;
+  --color-foreground: #3a322c;
+  --color-accent: #b5653a;
+  --color-heading: #3f4f3a; /* headings and links */
+}
+
+@layer base {
+  .dark {
+    --color-background: #1f2620;
+    --color-foreground: #e8e2d6;
+    --color-accent: #c9784a;
+    --color-heading: #a9b8a0;
+  }
 }
 
 /*
@@ -25,7 +44,7 @@
   ::before,
   ::backdrop,
   ::file-selector-button {
-    border-color: var(--color-gray-200, currentColor);
+    border-color: color-mix(in oklab, var(--color-foreground) 15%, transparent);
   }
 }
 
@@ -48,14 +67,13 @@
   body {
     @apply font-sans antialiased;
     @apply flex flex-col;
-    @apply bg-neutral-100 dark:bg-neutral-900;
-    @apply text-black/75 dark:text-white/75;
+    @apply bg-background text-foreground;
   }
 
   header {
     @apply fixed left-0 right-0 top-0 z-50 py-6;
-    @apply bg-neutral-100/75 dark:bg-neutral-900/75;
-    @apply saturate-200 backdrop-blur-xs;
+    @apply bg-background/75;
+    @apply backdrop-saturate-200 backdrop-blur-xs;
   }
 
   main {
@@ -69,19 +87,58 @@
   article {
     @apply prose prose-neutral max-w-full dark:prose-invert prose-img:mx-auto prose-img:my-auto;
     @apply prose-headings:font-semibold;
-    @apply prose-headings:text-black dark:prose-headings:text-white;
+    @apply prose-headings:text-heading;
+
+    /*
+      Typography plugin colors, mapped to the site tokens. `dark:prose-invert`
+      swaps in the invert set, so both sets point at the same (self-switching)
+      tokens.
+    */
+    --tw-prose-body: var(--color-foreground);
+    --tw-prose-headings: var(--color-heading);
+    --tw-prose-lead: var(--color-foreground);
+    --tw-prose-links: var(--color-heading);
+    --tw-prose-bold: var(--color-heading);
+    --tw-prose-counters: var(--color-accent);
+    --tw-prose-bullets: var(--color-accent);
+    --tw-prose-hr: color-mix(in oklab, var(--color-foreground) 15%, transparent);
+    --tw-prose-quotes: var(--color-foreground);
+    --tw-prose-quote-borders: var(--color-accent);
+    --tw-prose-captions: color-mix(in oklab, var(--color-foreground) 70%, transparent);
+    --tw-prose-code: var(--color-heading);
+    --tw-prose-pre-code: var(--astro-code-foreground);
+    --tw-prose-pre-bg: var(--astro-code-background);
+    --tw-prose-th-borders: color-mix(in oklab, var(--color-foreground) 25%, transparent);
+    --tw-prose-td-borders: color-mix(in oklab, var(--color-foreground) 15%, transparent);
+
+    --tw-prose-invert-body: var(--color-foreground);
+    --tw-prose-invert-headings: var(--color-heading);
+    --tw-prose-invert-lead: var(--color-foreground);
+    --tw-prose-invert-links: var(--color-heading);
+    --tw-prose-invert-bold: var(--color-heading);
+    --tw-prose-invert-counters: var(--color-accent);
+    --tw-prose-invert-bullets: var(--color-accent);
+    --tw-prose-invert-hr: color-mix(in oklab, var(--color-foreground) 15%, transparent);
+    --tw-prose-invert-quotes: var(--color-foreground);
+    --tw-prose-invert-quote-borders: var(--color-accent);
+    --tw-prose-invert-captions: color-mix(in oklab, var(--color-foreground) 70%, transparent);
+    --tw-prose-invert-code: var(--color-heading);
+    --tw-prose-invert-pre-code: var(--astro-code-foreground);
+    --tw-prose-invert-pre-bg: var(--astro-code-background);
+    --tw-prose-invert-th-borders: color-mix(in oklab, var(--color-foreground) 25%, transparent);
+    --tw-prose-invert-td-borders: color-mix(in oklab, var(--color-foreground) 15%, transparent);
   }
 }
 
 @layer utilities {
   article a {
-    @apply font-sans text-current underline underline-offset-[3px];
-    @apply decoration-black/30 dark:decoration-white/30;
+    @apply font-sans text-heading underline underline-offset-[3px];
+    @apply decoration-heading/30;
     @apply transition-colors duration-300 ease-in-out;
   }
   article a:hover {
-    @apply text-black dark:text-white;
-    @apply decoration-black/50 dark:decoration-white/50;
+    @apply text-accent;
+    @apply decoration-accent/60;
   }
 }
 
@@ -104,12 +161,12 @@ html.scrolled #back-to-top {
 
 /* shiki config */
 pre {
-  @apply border border-black/15 py-5 dark:border-white/20;
+  @apply border border-foreground/15 py-5;
 }
 
 :root {
-  --astro-code-foreground: #09090b;
-  --astro-code-background: #fafafa;
+  --astro-code-foreground: var(--color-foreground);
+  --astro-code-background: color-mix(in oklab, var(--color-foreground) 4%, var(--color-background));
   --astro-code-token-comment: #a19595;
   --astro-code-token-keyword: #f47067;
   --astro-code-token-string: #00a99a;
@@ -122,8 +179,6 @@ pre {
 }
 
 .dark {
-  --astro-code-foreground: #fafafa;
-  --astro-code-background: #09090b;
   --astro-code-token-comment: #a19595;
   --astro-code-token-keyword: #f47067;
   --astro-code-token-string: #00a99a;
@@ -137,11 +192,11 @@ pre {
 
 /* copy code button on codeblocks */
 .copy-code {
-  @apply absolute right-3 top-3 grid size-9 place-content-center rounded-sm border border-black/15 bg-neutral-100 text-center duration-300 ease-in-out dark:border-white/20 dark:bg-neutral-900;
+  @apply absolute right-3 top-3 grid size-9 place-content-center rounded-sm border border-foreground/15 bg-background text-center duration-300 ease-in-out;
 }
 
 .copy-code:hover {
-  @apply bg-[#E9E9E9] transition-colors dark:bg-[#232323];
+  @apply bg-foreground/5 transition-colors;
 }
 
 .copy-code:active {
