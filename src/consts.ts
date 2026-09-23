@@ -30,12 +30,12 @@ export const PROJECTS: Metadata = {
 
 export const SOCIALS: Socials = [
   {
-    NAME: "Email",
+    NAME: "이메일",
     HREF: "mailto:suhyun@ik.me",
   },
   {
-    NAME: "Website",
-    HREF: "https://leesuhyun.com",
+    NAME: "상담 문의",
+    HREF: "https://open.kakao.com/o/soG9s5Oi",
   },
 ];
 

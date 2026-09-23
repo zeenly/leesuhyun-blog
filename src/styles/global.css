@@ -77,7 +77,8 @@
   }
 
   main {
-    @apply flex-1 py-32;
+    /* extra top room on small screens, where the fixed header can wrap to three rows */
+    @apply flex-1 pt-36 pb-32 sm:pt-32;
   }
 
   footer {

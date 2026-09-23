@@ -70,39 +70,23 @@ const projects: CollectionEntry<"projects">[] = (
         </section>
 
         <section class="animate space-y-4">
-          <h2 class="font-semibold text-heading">
-            Let's Connect
-          </h2>
-          <article>
-            <p>
-              If you want to get in touch with me about something or just to say
-              hi, reach out on social media or send me an email.
-            </p>
-          </article>
+          <h2 class="font-semibold text-heading">Contact</h2>
           <ul class="not-prose flex flex-wrap gap-2">
             {
-              SOCIALS.map((SOCIAL) => (
-                <li class="flex gap-x-2 text-nowrap">
-                  <Link
-                    href={SOCIAL.HREF}
-                    external
-                    aria-label={`${SITE.TITLE} on ${SOCIAL.NAME}`}
-                  >
-                    {SOCIAL.NAME}
-                  </Link>
-                  {"/"}
-                </li>
-              ))
+              SOCIALS.map((SOCIAL, i) => {
+                const external = SOCIAL.HREF.startsWith("http");
+                return (
+                  <li class="flex gap-x-2 text-nowrap">
+                    <Link href={SOCIAL.HREF} external={external}>
+                      {SOCIAL.NAME}
+                    </Link>
+                    {i < SOCIALS.length - 1 && "/"}
+                  </li>
+                );
+              })
             }
-            <li class="line-clamp-1">
-              <Link
-                href={`mailto:${SITE.EMAIL}`}
-                aria-label={`Email ${SITE.TITLE}`}
-              >
-                {SITE.EMAIL}
-              </Link>
-            </li>
           </ul>
+          <p class="text-sm text-foreground/70">평일 저녁 회신</p>
         </section>
       </div>
     </aside>
