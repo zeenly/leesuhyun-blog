@@ -27,7 +27,7 @@ const { category, posts } = Astro.props;
     <aside data-pagefind-ignore>
       <div class="space-y-10">
         <CategoryFilter active={category} />
-        <h1 class="animate font-semibold text-black dark:text-white">
+        <h1 class="animate font-semibold text-heading">
           {category}
         </h1>
         <PostsByYear posts={posts} />

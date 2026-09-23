@@ -9,10 +9,9 @@ type Props = {
 const { active } = Astro.props;
 
 const linkClass =
-  "rounded-sm border px-2 py-1 transition-colors duration-300 ease-in-out hover:bg-black/5 hover:text-black focus-visible:bg-black/5 focus-visible:text-black dark:hover:bg-white/5 dark:hover:text-white dark:focus-visible:bg-white/5 dark:focus-visible:text-white";
-const activeClass =
-  "border-black/40 bg-black/5 font-semibold text-black dark:border-white/40 dark:bg-white/5 dark:text-white";
-const inactiveClass = "border-black/15 dark:border-white/20";
+  "rounded-sm border px-2 py-1 transition-colors duration-300 ease-in-out hover:bg-foreground/5 hover:text-heading focus-visible:bg-foreground/5 focus-visible:text-heading";
+const activeClass = "border-accent bg-accent/10 font-semibold text-accent";
+const inactiveClass = "border-foreground/15";
 ---
 
 <nav aria-label="Categories" class="animate flex flex-wrap gap-2 text-sm">
