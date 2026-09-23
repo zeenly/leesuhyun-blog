@@ -18,6 +18,11 @@ export const BLOG: Metadata = {
   DESCRIPTION: "교육 관련 글을 모아둔 공간입니다.",
 };
 
+export const ABOUT: Metadata = {
+  TITLE: "About",
+  DESCRIPTION: "영어강사 이수현 소개와 수업 안내입니다.",
+};
+
 export const PROJECTS: Metadata = {
   TITLE: "Projects",
   DESCRIPTION: "개인적인 기록과 생각들입니다.",
@@ -29,12 +34,8 @@ export const SOCIALS: Socials = [
     HREF: "mailto:suhyun@ik.me",
   },
   {
-    NAME: "GitHub",
-    HREF: "#",
-  },
-  {
     NAME: "Website",
-    HREF: "#",
+    HREF: "https://leesuhyun.com",
   },
 ];
 
