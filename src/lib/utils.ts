@@ -1,3 +1,4 @@
+import type { CollectionEntry } from "astro:content";
 import type { Category } from "@consts";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -22,5 +23,10 @@ export function readingTime(html: string) {
 }
 
 export function categoryHref(category: Category) {
-  return `/blog/category/${category.toLowerCase()}`;
+  return `/${category.toLowerCase()}`;
+}
+
+// Blog posts live under their category: /class/my-post
+export function postHref(post: CollectionEntry<"blog">) {
+  return `${categoryHref(post.data.category)}/${post.id}`;
 }

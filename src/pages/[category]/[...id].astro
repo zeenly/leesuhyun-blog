@@ -16,7 +16,7 @@ export async function getStaticPaths() {
     .filter((post) => !post.data.draft)
     .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
   return posts.map((post) => ({
-    params: { id: post.id },
+    params: { category: post.data.category.toLowerCase(), id: post.id },
     props: post,
   }));
 }
