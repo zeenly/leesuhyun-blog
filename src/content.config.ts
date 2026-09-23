@@ -3,7 +3,8 @@ import { z } from "astro/zod";
 import { glob } from 'astro/loaders';
 
 const blog = defineCollection({
-  loader: glob({ pattern: '**/*.{md,mdx}', base: "./src/content/blog" }),
+  // Top-level entries starting with "_" (e.g. _template) are excluded from the build.
+  loader: glob({ pattern: ['[!_]*.{md,mdx}', '[!_]*/**/*.{md,mdx}'], base: "./src/content/blog" }),
   schema: z.object({
     title: z.string(),
     description: z.string(),
@@ -14,7 +15,7 @@ const blog = defineCollection({
 });
 
 const projects = defineCollection({
-  loader: glob({ pattern: '**/*.{md,mdx}', base: "./src/content/projects" }),
+  loader: glob({ pattern: ['[!_]*.{md,mdx}', '[!_]*/**/*.{md,mdx}'], base: "./src/content/projects" }),
   schema: z.object({
     title: z.string(),
     description: z.string(),

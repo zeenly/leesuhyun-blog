@@ -9,6 +9,8 @@ import PostNavigation from "@components/PostNavigation.astro";
 import TableOfContents from "@components/TableOfContents.astro";
 import Giscus from "@components/Giscus.astro";
 
+const ENABLE_COMMENTS = false;
+
 export async function getStaticPaths() {
   const posts = (await getCollection("blog"))
     .filter((post) => !post.data.draft)
@@ -92,9 +94,14 @@ const { Content, headings } = await render(post);
       <div class="mt-24">
         <PostNavigation prevPost={prevPost} nextPost={nextPost} />
       </div>
-      <div class="mt-24">
-        <Giscus />
-      </div>
+      {/* Comments disabled for now. Set ENABLE_COMMENTS to true to re-enable Giscus. */}
+      {
+        ENABLE_COMMENTS && (
+          <div class="mt-24">
+            <Giscus />
+          </div>
+        )
+      }
     </article>
   </Container>
 </Layout>
