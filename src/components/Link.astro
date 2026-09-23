@@ -20,6 +20,7 @@ const {
 <a
   href={href}
   target={external ? "_blank" : "_self"}
+  rel={external ? "noopener noreferrer" : undefined}
   class={cn(
     "inline-block text-heading decoration-heading/30 hover:text-accent hover:decoration-accent/60 focus-visible:text-accent focus-visible:decoration-accent/60 transition-colors duration-300 ease-in-out",
     underline && "underline underline-offset-[3px]",
