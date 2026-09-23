@@ -10,7 +10,7 @@ import { categoryHref } from "@lib/utils";
     <div class="flex flex-wrap justify-between gap-y-2">
       <Link href="/" underline={false}>
         <div class="font-semibold">
-          {SITE.TITLE}&nbsp;🔬
+          {SITE.TITLE}
         </div>
       </Link>
       <nav class="flex items-center gap-1 text-sm">
@@ -23,6 +23,10 @@ import { categoryHref } from "@lib/utils";
           ))
         }
         <Link href="/projects">Projects</Link>
+        <span>
+          {`/`}
+        </span>
+        <Link href="/about">About</Link>
         <span>
           {`/`}
         </span>
