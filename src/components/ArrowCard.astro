@@ -1,6 +1,6 @@
 ---
 import type { CollectionEntry } from "astro:content";
-import { postHref } from "@lib/utils";
+import { postDescription, postHref } from "@lib/utils";
 
 type Props = {
   entry: CollectionEntry<"blog"> | CollectionEntry<"projects">;
@@ -9,6 +9,9 @@ type Props = {
 const { entry } = Astro.props as {
   entry: CollectionEntry<"blog"> | CollectionEntry<"projects">;
 };
+
+const description =
+  entry.collection === "blog" ? postDescription(entry) : entry.data.description;
 
 const href =
   entry.collection === "blog" ? postHref(entry) : `/${entry.collection}/${entry.id}`;
@@ -23,7 +26,7 @@ const href =
       {entry.data.title}
     </div>
     <div class="text-sm">
-      {entry.data.description}
+      {description}
     </div>
   </div>
   <svg

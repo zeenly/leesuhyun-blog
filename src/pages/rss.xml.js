@@ -1,7 +1,7 @@
 import rss from "@astrojs/rss";
 import { SITE } from "@consts";
 import { getCollection } from "astro:content";
-import { postHref } from "@lib/utils";
+import { postDescription, postHref } from "@lib/utils";
 
 export async function GET(context) {
   const blog = (await getCollection("blog")).filter((post) => !post.data.draft);
@@ -20,7 +20,10 @@ export async function GET(context) {
     site: context.site,
     items: items.map((item) => ({
       title: item.data.title,
-      description: item.data.description,
+      description:
+        item.collection === "blog"
+          ? postDescription(item)
+          : item.data.description,
       pubDate: item.data.date,
       link:
         item.collection === "blog"
