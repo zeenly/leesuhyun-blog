@@ -2,7 +2,7 @@ import type { Metadata, Site, Socials } from "@types";
 
 export const SITE: Site = {
   TITLE: "LEE SUHYUN",
-  DESCRIPTION: "영어강사 이수현의 개인 블로그입니다.", 
+  DESCRIPTION: "영어강사 이수현의 개인 블로그입니다.",
   EMAIL: "suhyun@ik.me",
   NUM_POSTS_ON_HOMEPAGE: 5,
   NUM_PROJECTS_ON_HOMEPAGE: 3,
@@ -37,3 +37,6 @@ export const SOCIALS: Socials = [
     HREF: "#",
   },
 ];
+
+export const CATEGORIES = ["Class", "Read", "Life", "Note"] as const;
+export type Category = (typeof CATEGORIES)[number];
