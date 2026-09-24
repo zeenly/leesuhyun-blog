@@ -22,7 +22,8 @@ const blog = defineCollection({
 });
 
 const projects = defineCollection({
-  loader: glob({ pattern: ['[!_]*.{md,mdx}', '[!_]*/**/*.{md,mdx}'], base: "./src/content/projects" }),
+  // Same rule as blog: `name.md` or `name/index.md` (for projects with images), both get the id `name`.
+  loader: glob({ pattern: ['[!_]*.{md,mdx}', '[!_]*/index.{md,mdx}'], base: "./src/content/projects" }),
   schema: z.object({
     title: z.string(),
     description: z.string(),
