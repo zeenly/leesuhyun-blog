@@ -2,7 +2,6 @@
 import { getCollection } from "astro:content";
 import Layout from "@layouts/Layout.astro";
 import Container from "@components/Container.astro";
-import CategoryFilter from "@components/CategoryFilter.astro";
 import PostsByYear from "@components/PostsByYear.astro";
 import { CATEGORIES } from "@consts";
 
@@ -26,7 +25,6 @@ const { category, posts } = Astro.props;
   <Container>
     <aside data-pagefind-ignore>
       <div class="space-y-10">
-        <CategoryFilter active={category} />
         <h1 class="animate font-semibold text-heading">
           {category}
         </h1>
