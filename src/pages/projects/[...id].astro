@@ -45,13 +45,20 @@ const { Content, headings } = await render(project);
       </h1>
       {
         (project.data.demoURL || project.data.repoURL) && (
-          <nav class="flex gap-1">
+          <nav class="flex flex-wrap items-center gap-4 pt-3">
             {project.data.demoURL && (
-              <Link href={project.data.demoURL} external>
-                demo
-              </Link>
+              <a
+                href={project.data.demoURL}
+                target="_blank"
+                rel="noopener noreferrer"
+                class="inline-flex items-center gap-1.5 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-background transition-opacity duration-300 ease-in-out hover:opacity-85 focus-visible:opacity-85"
+              >
+                바로가기
+                <svg viewBox="0 0 24 24" class="size-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M7 17 17 7M8 7h9v9" />
+                </svg>
+              </a>
             )}
-            {project.data.demoURL && project.data.repoURL && <span>/</span>}
             {project.data.repoURL && (
               <Link href={project.data.repoURL} external>
                 repo
