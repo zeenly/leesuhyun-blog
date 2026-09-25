@@ -68,6 +68,8 @@
     @apply font-sans antialiased;
     @apply flex flex-col;
     @apply bg-background text-foreground;
+    /* Korean: wrap lines between words, not in the middle of a word */
+    @apply break-keep;
   }
 
   header {
