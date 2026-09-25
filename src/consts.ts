@@ -28,6 +28,9 @@ export const PROJECTS: Metadata = {
   DESCRIPTION: "개인적인 기록과 생각들입니다.",
 };
 
+export const CONSULT_URL = "https://open.kakao.com/o/soG9s5Oi";
+export const CHURCH_URL = "https://seed.band";
+
 export const SOCIALS: Socials = [
   {
     NAME: "이메일",
@@ -35,7 +38,7 @@ export const SOCIALS: Socials = [
   },
   {
     NAME: "상담 문의",
-    HREF: "https://open.kakao.com/o/soG9s5Oi",
+    HREF: CONSULT_URL,
   },
 ];
 

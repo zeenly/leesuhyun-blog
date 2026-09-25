@@ -1,7 +1,7 @@
 ---
 import Layout from "@layouts/Layout.astro";
 import Container from "@components/Container.astro";
-import { SITE, HOME, SOCIALS } from "@consts";
+import { SITE, HOME, SOCIALS, CONSULT_URL, CHURCH_URL } from "@consts";
 import ArrowCard from "@components/ArrowCard.astro";
 import Link from "@components/Link.astro";
 import { getCollection } from "astro:content";
@@ -23,13 +23,24 @@ const projects: CollectionEntry<"projects">[] = (
 <Layout title={HOME.TITLE} description={HOME.DESCRIPTION}>
   <Container>
     <aside data-pagefind-ignore>
-      <h1 class="font-semibold text-heading">{SITE.TITLE}</h1>
+      <h1 class="font-semibold text-heading">이수현</h1>
       <div class="space-y-16">
         <section>
           <article class="space-y-4">
+            <p>이천에서 고등부 영어만 가르칩니다. 등교 전 아침, 주 4회입니다.</p>
             <p>
-              (임시문구) 고등부 영어만 가르칩니다. 주 2회 수업, 정원제로 운영합니다. 단어는 소리와 함께, 지문은 끊어 읽기 기호로, 진행 상황은 매주 한 장의 체크카드로 확인합니다.
+              성적이 멈춘 자리에는 대개 이유가 있습니다. 대부분은 학생이 게을러서가 아닙니다.<br />
+              혼자 남는 시간에 무엇을 할지 정해주고, 해낸 만큼을 봅니다.
             </p>
+            <p>숫자는 차갑게 읽고, 사람은 따뜻하게 봅니다.</p>
+            <p>
+              수업 이야기는 <a href="/class/class-principles">수업 원칙</a>에, 문의는
+              <a href={CONSULT_URL} target="_blank" rel="noopener noreferrer">상담 문의</a>로 받습니다.<br />
+              주일에는
+              <a href={CHURCH_URL} target="_blank" rel="noopener noreferrer">씨앗교회</a>에서
+              예배를 준비합니다.
+            </p>
+            <p class="pt-4"><em>포기하지 않은 학생에게, 포기하지 않는 선생님.</em></p>
           </article>
         </section>
 
