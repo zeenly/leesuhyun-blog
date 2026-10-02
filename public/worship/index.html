@@ -155,6 +155,44 @@
   .rest.full .lines { font-size: 21px; color: var(--text); }
   .rest.full .item.playing { background: var(--accent-soft); }
 
+  /* 전체 흐름 (flow) */
+  .flow {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    overflow-x: auto;
+    white-space: nowrap;
+    margin: 0 -16px 12px;
+    padding: 8px 16px;
+    background: var(--card);
+    border-bottom: 1px solid var(--line);
+    scrollbar-width: none;
+  }
+  .flow::-webkit-scrollbar { display: none; }
+  .flow button { flex: 0 0 auto; min-height: 48px; font-size: 17px; padding: 0 12px; }
+  .flow button.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--accent-text);
+    font-weight: 700;
+  }
+  .flow .arrow { flex: 0 0 auto; color: var(--muted); font-size: 15px; }
+
+  .home {
+    display: block;
+    width: 100%;
+    margin-top: 10px;
+    min-height: 48px;
+    border: 0;
+    background: transparent;
+    color: var(--muted);
+    font-size: 16px;
+    text-decoration: underline;
+  }
+
   /* 지난 주일 */
   #archive { margin-top: 32px; }
   #archive h3 { font-size: 20px; margin: 0 0 10px; }
@@ -212,12 +250,14 @@
       <div class="label" id="nowLabel"></div>
       <div class="lines" id="nowLines"></div>
     </div>
+    <div class="flow" id="flow" hidden></div>
     <div class="rest" id="rest"></div>
 
     <div class="controls">
       <button id="replayBtn">이 구간 다시</button>
       <button id="nextBtn" class="primary">다음 곡</button>
     </div>
+    <button id="homeBtn" class="home">처음 화면으로</button>
   </section>
 
   <section id="archive">
@@ -250,6 +290,16 @@
   function byStart(song) {
     return song.sections.map(function (s, i) { return i; })
       .sort(function (a, b) { return song.sections[a].start - song.sections[b].start; });
+  }
+
+  // flow에서 "끝"을 뺀 항목들, "끝" 시각(없으면 null)
+  function flowItems(song) {
+    return (song.flow || []).filter(function (f) { return norm(f.name) !== "끝"; });
+  }
+  function flowEnd(song) {
+    var list = song.flow || [];
+    var last = list[list.length - 1];
+    return last && norm(last.name) === "끝" ? last.start : null;
   }
 
   function formatDate(iso) {
@@ -287,6 +337,7 @@
     songIdx: 0,
     secIdx: -1,     // 재생 중인 구간 (-1: 없음)
     full: false,    // 전체 듣기 중
+    flowIdx: -1,    // 전체 듣기에서 지금 나오는 flow 항목 (-1: 간주 등)
     ended: false,
     failed: false,
   };
@@ -335,6 +386,7 @@
     }
     $("intro").hidden = false;
     $("card").hidden = true;
+    $("archive").hidden = false;
     renderArchive();
     document.title = "주일 찬양 예습 · " + dateText;
   }
@@ -394,7 +446,7 @@
       var all = document.createElement("button");
       all.textContent = "전체 듣기";
       all.className = "full";
-      all.addEventListener("click", playFull);
+      all.addEventListener("click", function () { playFull(0); });
       box.appendChild(all);
     }
 
@@ -418,6 +470,7 @@
     rest.innerHTML = "";
     rest.classList.toggle("full", state.full);
     $("nowBox").hidden = state.full;
+    renderFlow();
 
     var addItem = function (i) {
       var s = song.sections[i];
@@ -448,13 +501,73 @@
     song.sections.forEach(function (s, i) { if (i !== cur) addItem(i); });
   }
 
+  // 전체 듣기 중 흐름 한 줄
+  function renderFlow() {
+    var box = $("flow");
+    var song = songs[state.songIdx];
+    var items = flowItems(song);
+    box.innerHTML = "";
+    box.hidden = !(state.full && items.length);
+    if (box.hidden) return;
+    items.forEach(function (f, i) {
+      if (i > 0) {
+        var arrow = document.createElement("span");
+        arrow.className = "arrow";
+        arrow.textContent = "→";
+        box.appendChild(arrow);
+      }
+      var b = document.createElement("button");
+      b.textContent = f.name;
+      b.dataset.idx = i;
+      b.addEventListener("click", function () { playFull(i); });
+      box.appendChild(b);
+    });
+  }
+
   // 전체 듣기 중 지금 나오는 구간 가사 강조
   function markPlaying(t) {
     var song = songs[state.songIdx];
+    var items = flowItems(song);
+    var activeName = null;
+
+    if (items.length) {
+      var idx = -1;
+      for (var i = 0; i < items.length; i++) {
+        if (t >= items[i].start && t < items[i].end) { idx = i; break; }
+      }
+      state.flowIdx = idx;
+      activeName = idx >= 0 ? norm(items[idx].name) : null;
+      var activeBtn = null;
+      Array.prototype.forEach.call($("flow").querySelectorAll("button"), function (b) {
+        var on = Number(b.dataset.idx) === idx;
+        b.classList.toggle("active", on);
+        if (on) activeBtn = b;
+      });
+      if (activeBtn) {
+        var box = $("flow");
+        var left = activeBtn.offsetLeft - (box.clientWidth - activeBtn.offsetWidth) / 2;
+        if (Math.abs(box.scrollLeft - left) > 4) box.scrollTo({ left: left, behavior: "smooth" });
+      }
+    }
+
     Array.prototype.forEach.call($("rest").children, function (el) {
       var s = song.sections[el.dataset.idx];
-      el.classList.toggle("playing", !!s && t >= s.start && t < s.end);
+      var on = !!s && (items.length ? norm(s.name) === activeName : t >= s.start && t < s.end);
+      var was = el.classList.contains("playing");
+      el.classList.toggle("playing", on);
+      if (on && !was) scrollIntoViewIfNeeded(el);
     });
+  }
+
+  // 강조된 가사가 화면 밖이면 보이도록 (위쪽 흐름 줄에 가리지 않게)
+  function scrollIntoViewIfNeeded(el) {
+    var r = el.getBoundingClientRect();
+    var top = $("flow").hidden ? 0 : $("flow").offsetHeight;
+    var vh = window.innerHeight;
+    if (r.top >= top && r.bottom <= vh) return;
+    var y = window.scrollY + r.top - top - 8;
+    if (r.height < vh - top) y = window.scrollY + r.top - top - (vh - top - r.height) / 3;
+    window.scrollTo({ top: Math.max(0, y), behavior: "smooth" });
   }
 
   function showNotice(text, song, sec) {
@@ -496,19 +609,28 @@
     load({ videoId: song.videoId, startSeconds: s.start, endSeconds: s.end });
   }
 
-  // 첫 구간 시작 시각부터 영상 끝까지
-  function playFull() {
+  // 전체 듣기: flow가 있으면 flow 항목(fromIdx, 기본 첫 항목)부터 "끝"까지,
+  // 없으면 첫 구간 시작 시각부터 영상 끝까지
+  function playFull(fromIdx) {
     var song = songs[state.songIdx];
     if (!song.sections.length) return;
-    var start = song.sections[byStart(song)[0]].start;
+    var items = flowItems(song);
+    var start = items.length
+      ? items[typeof fromIdx === "number" ? fromIdx : 0].start
+      : song.sections[byStart(song)[0]].start;
+    var end = flowEnd(song);
+    var wasFull = state.full;
     state.secIdx = -1;
     state.full = true;
+    state.flowIdx = -1;
     state.ended = false;
     state.failed = false;
-    renderLyrics();
+    if (!wasFull) renderLyrics();
     markPlaying(start);
-    setStatus("전체 듣기 · " + fmt(start) + "부터");
-    load({ videoId: song.videoId, startSeconds: start });
+    setStatus("전체 듣기 · " + fmt(start) + (end != null ? "~" + fmt(end) : "부터"));
+    var req = { videoId: song.videoId, startSeconds: start };
+    if (end != null) req.endSeconds = end;
+    load(req);
   }
 
   function startSong(songIdx) {
@@ -541,7 +663,7 @@
   }
 
   $("replayBtn").addEventListener("click", function () {
-    if (state.full) playFull();
+    if (state.full) playFull(0);
     else if (state.secIdx >= 0) playSection(state.secIdx);
   });
 
@@ -552,7 +674,13 @@
   $("startBtn").addEventListener("click", function () {
     $("intro").hidden = true;
     $("card").hidden = false;
+    $("archive").hidden = true;
     startSong(0);
+  });
+
+  $("homeBtn").addEventListener("click", function () {
+    showWeek(week.date);
+    window.scrollTo({ top: 0 });
   });
 
   // 끝 시각 감시 (endSeconds가 안 먹는 경우 대비) + 전체 듣기 가사 강조
@@ -561,7 +689,12 @@
     if (typeof player.getCurrentTime !== "function") return;
     if (player.getPlayerState() !== YT.PlayerState.PLAYING) return;
     var t = player.getCurrentTime();
-    if (state.full) { markPlaying(t); return; }
+    if (state.full) {
+      var end = flowEnd(songs[state.songIdx]);
+      if (end != null && t >= end - 0.2) { onSegmentEnd(); return; }
+      markPlaying(t);
+      return;
+    }
     var s = songs[state.songIdx].sections[state.secIdx];
     if (s && t >= s.end - 0.2) onSegmentEnd();
   }, 200);
@@ -587,11 +720,11 @@
         onError: function (e) {
           state.failed = true;
           var song = songs[state.songIdx];
-          var s = state.full ? song.sections[byStart(song)[0]] : song.sections[state.secIdx];
+          var s = state.full ? (flowItems(song)[0] || song.sections[byStart(song)[0]]) : song.sections[state.secIdx];
           var why = (e.data === 101 || e.data === 150)
             ? "이 영상은 다른 사이트에서 재생할 수 없도록 막혀 있습니다."
             : "영상을 재생할 수 없습니다.";
-          showNotice(why + " 유튜브에서 직접 들어 주세요" + (s ? " (" + (state.full ? "전체" : s.name) + " " + fmt(s.start) + "부터)." : "."), song, s && s.start);
+          showNotice(why + " 유튜브에서 직접 들어 주세요" + (s ? " (" + (state.full ? "전체 듣기" : s.name) + " " + fmt(s.start) + "부터)." : "."), song, s && s.start);
           setStatus("");
         },
       },
