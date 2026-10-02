@@ -194,6 +194,21 @@
   }
 
   /* 지난 주일 */
+  /* 관리용: 곡 목록 */
+  #admin h1 { font-size: 24px; margin: 8px 0 14px; }
+  #admin h2 { font-size: 20px; margin: 28px 0 10px; }
+  #admin .notice ul { margin: 6px 0 0; padding-left: 1.2em; }
+  .songs-table { width: 100%; border-collapse: collapse; font-size: 15px; background: var(--card); border-radius: 12px; overflow: hidden; }
+  .songs-table th, .songs-table td { padding: 10px 8px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+  .songs-table th { font-size: 13px; color: var(--muted); font-weight: 700; white-space: nowrap; }
+  .songs-table td:nth-child(n+2), .songs-table th:nth-child(n+2) { text-align: center; white-space: nowrap; }
+  .songs-table td a { color: var(--accent); font-weight: 700; font-size: 16px; }
+  .songs-table td.dim { color: var(--muted); }
+  .ppt-form { display: grid; gap: 10px; }
+  .ppt-form label { display: grid; gap: 4px; font-size: 15px; color: var(--muted); }
+  .ppt-form select { font: inherit; font-size: 18px; min-height: 48px; border-radius: 12px; border: 1px solid var(--line); background: var(--card); color: var(--text); padding: 0 12px; }
+  #pptMsg { font-size: 15px; color: var(--muted); min-height: 1.5em; margin: 0; }
+
   #archive { margin-top: 32px; }
   #archive h3 { font-size: 20px; margin: 0 0 10px; }
   #archive ul { list-style: none; margin: 0; padding: 0; }
@@ -263,6 +278,31 @@
   <section id="archive">
     <h3>지난 주일</h3>
     <ul id="archiveList"></ul>
+  </section>
+
+  <!-- 관리용 (?view=songs). 성도용 화면에서는 링크하지 않음 -->
+  <section id="admin" hidden>
+    <h1>곡 목록</h1>
+    <div class="notice" id="adminUnknown" hidden></div>
+    <table class="songs-table">
+      <thead><tr><th>곡 제목</th><th>부른 횟수</th><th>마지막 주일</th><th>흐름</th></tr></thead>
+      <tbody id="songRows"></tbody>
+    </table>
+
+    <h2>PPT 내려받기</h2>
+    <div class="ppt-form">
+      <label>주일 <select id="pptWeek"></select></label>
+      <label>한 장에 넣을 줄 수
+        <select id="pptLines">
+          <option value="1">1줄</option>
+          <option value="2" selected>2줄</option>
+          <option value="3">3줄</option>
+          <option value="4">4줄</option>
+        </select>
+      </label>
+      <button id="pptBtn" class="primary" disabled>PPT 내려받기</button>
+      <p id="pptMsg"></p>
+    </div>
   </section>
 </main>
 
@@ -387,6 +427,9 @@
     $("intro").hidden = false;
     $("card").hidden = true;
     $("archive").hidden = false;
+    $("admin").hidden = true;
+    $("nextBtn").hidden = false;
+    $("homeBtn").textContent = "처음 화면으로";
     renderArchive();
     document.title = "주일 찬양 예습 · " + dateText;
   }
@@ -422,9 +465,7 @@
     });
   }
 
-  window.addEventListener("popstate", function () {
-    showWeek(new URLSearchParams(location.search).get("date"));
-  });
+  window.addEventListener("popstate", function () { route(); });
 
   // ---- 화면 그리기 ----
   function renderCard() {
@@ -679,7 +720,12 @@
   });
 
   $("homeBtn").addEventListener("click", function () {
-    showWeek(week.date);
+    if (new URLSearchParams(location.search).get("view") === "songs") {
+      history.pushState(null, "", adminUrl());
+      showAdmin();
+    } else {
+      showWeek(week.date);
+    }
     window.scrollTo({ top: 0 });
   });
 
@@ -737,7 +783,225 @@
     showNotice("유튜브 재생기를 불러오지 못했습니다. 인터넷 연결을 확인하거나 유튜브에서 직접 들어 주세요.", song, s && s.start);
   }
 
-  showWeek(new URLSearchParams(location.search).get("date"));
+  // ---- 관리용 화면 (?view=songs) ----
+  // 성도용 화면에서는 링크하지 않습니다. 곡 목록, 곡 하나 들어 보기, PPT 내려받기.
+  var PPTX_SRC = "https://cdn.jsdelivr.net/npm/pptxgenjs@4.0.1/dist/pptxgen.bundle.js";
+  var pptxState = "idle"; // idle | loading | ready | failed
+
+  function adminUrl(title) {
+    return location.pathname + "?view=songs" + (title ? "&song=" + encodeURIComponent(norm(title)) : "");
+  }
+
+  // weeks.js로 곡마다 부른 횟수와 마지막 주일 계산
+  function songStats() {
+    var stats = {};
+    SONGS.forEach(function (s) { stats[norm(s.title)] = { song: s, count: 0, last: null }; });
+    var unknown = {};
+    weeks.forEach(function (w) {
+      var seen = {};
+      w.songs.forEach(function (title) {
+        var key = norm(title);
+        if (seen[key]) return;
+        seen[key] = true;
+        var st = stats[key];
+        if (st) {
+          st.count++;
+          if (!st.last || norm(w.date) > st.last) st.last = norm(w.date);
+        } else {
+          (unknown[key] = unknown[key] || []).push(norm(w.date));
+        }
+      });
+    });
+    return { stats: stats, unknown: unknown };
+  }
+
+  function showAdmin(title) {
+    pending = null;
+    if (playerReady) player.pauseVideo();
+    state.secIdx = -1;
+    state.full = false;
+    state.ended = true;
+    $("intro").hidden = true;
+    $("archive").hidden = true;
+    $("admin").hidden = !!title;
+    $("card").hidden = !title;
+    loadPptx();
+    if (title) openAdminSong(title);
+    else renderSongList();
+  }
+
+  function renderSongList() {
+    document.title = "곡 목록 · 주일 찬양";
+    var r = songStats();
+
+    var warn = $("adminUnknown");
+    var keys = Object.keys(r.unknown);
+    warn.innerHTML = "";
+    warn.hidden = !keys.length;
+    if (keys.length) {
+      var head = document.createElement("strong");
+      head.textContent = "weeks.js에는 있는데 songs.js에 없는 제목";
+      warn.appendChild(head);
+      var ul = document.createElement("ul");
+      keys.forEach(function (k) {
+        var li = document.createElement("li");
+        li.textContent = "“" + k + "” — " + r.unknown[k].join(", ");
+        ul.appendChild(li);
+      });
+      warn.appendChild(ul);
+    }
+
+    // 마지막으로 부른 주일이 최근인 순서, 안 부른 곡은 맨 아래(제목순)
+    var rows = Object.keys(r.stats).map(function (k) { return r.stats[k]; });
+    rows.sort(function (a, b) {
+      if (a.last && b.last) return a.last < b.last ? 1 : a.last > b.last ? -1 : 0;
+      if (a.last) return -1;
+      if (b.last) return 1;
+      return a.song.title.localeCompare(b.song.title, "ko");
+    });
+
+    var tbody = $("songRows");
+    tbody.innerHTML = "";
+    rows.forEach(function (row) {
+      var tr = document.createElement("tr");
+      var td = document.createElement("td");
+      var a = document.createElement("a");
+      a.href = adminUrl(row.song.title);
+      a.textContent = row.song.title;
+      a.addEventListener("click", function (e) {
+        e.preventDefault();
+        history.pushState(null, "", adminUrl(row.song.title));
+        showAdmin(row.song.title);
+        window.scrollTo({ top: 0 });
+      });
+      td.appendChild(a);
+      tr.appendChild(td);
+      [String(row.count), row.last || "—", flowItems(row.song).length ? "있음" : "없음"].forEach(function (t, i) {
+        var c = document.createElement("td");
+        c.textContent = t;
+        if (i === 2 && t === "없음") c.className = "dim";
+        tr.appendChild(c);
+      });
+      tbody.appendChild(tr);
+    });
+
+    var sel = $("pptWeek");
+    var prev = sel.value;
+    sel.innerHTML = "";
+    weeks.forEach(function (w) {
+      var o = document.createElement("option");
+      o.value = norm(w.date);
+      o.textContent = norm(w.date) + " (" + w.songs.length + "곡)";
+      sel.appendChild(o);
+    });
+    if (prev) sel.value = prev;
+  }
+
+  function openAdminSong(title) {
+    var song = findSong(title);
+    var st = songStats().stats[norm(title)];
+    songs = [song];
+    state.songIdx = 0;
+    renderCard();
+    $("cardDate").textContent = st && st.last ? "마지막: " + st.last : "아직 안 부른 곡";
+    $("cardCount").textContent = st ? st.count + "번 부름" : "";
+    $("nextBtn").hidden = true;
+    $("homeBtn").textContent = "곡 목록으로";
+    setStatus("");
+    document.title = song.title + " · 곡 목록";
+  }
+
+  // ---- PPT ----
+  function loadPptx() {
+    if (pptxState !== "idle") return;
+    pptxState = "loading";
+    updatePptBtn();
+    var s = document.createElement("script");
+    s.src = PPTX_SRC;
+    s.onload = function () { pptxState = window.PptxGenJS ? "ready" : "failed"; updatePptBtn(); };
+    s.onerror = function () { pptxState = "failed"; updatePptBtn(); };
+    document.head.appendChild(s);
+  }
+
+  function updatePptBtn() {
+    var b = $("pptBtn");
+    b.disabled = pptxState !== "ready";
+    if (pptxState === "loading") pptMsg("PPT 도구를 불러오는 중입니다…");
+    else if (pptxState === "failed") pptMsg("PPT 도구(PptxGenJS)를 불러오지 못했습니다. 인터넷 연결을 확인하고 새로고침해 주세요.");
+    else pptMsg("");
+  }
+
+  function pptMsg(t) { $("pptMsg").textContent = t; }
+
+  function chunk(lines, n) {
+    var out = [];
+    for (var i = 0; i < lines.length; i += n) out.push(lines.slice(i, i + n));
+    return out;
+  }
+
+  var FONT = "Malgun Gothic";
+
+  function makePpt() {
+    var w = pickWeek($("pptWeek").value);
+    if (!w || pptxState !== "ready") return;
+    var per = Number($("pptLines").value) || 2;
+
+    var pptx = new PptxGenJS();
+    pptx.layout = "LAYOUT_16x9"; // 10 x 5.625 in
+    pptx.title = "주일 찬양 " + norm(w.date);
+
+    var missing = [];
+    w.songs.forEach(function (title) {
+      var song = findSong(title);
+
+      var t = pptx.addSlide();
+      t.background = { color: "000000" };
+      t.addText(song.title, {
+        x: 0.5, y: 0, w: 9, h: 5.625,
+        align: "center", valign: "middle",
+        fontFace: FONT, fontSize: 48, bold: true, color: "FFFFFF",
+      });
+      if (song.missing) { missing.push(title); return; }
+
+      song.sections.forEach(function (sec) {
+        chunk(sec.lines || [], per).forEach(function (group) {
+          var sl = pptx.addSlide();
+          sl.background = { color: "000000" };
+          sl.addText(group.join("\n"), {
+            x: 0.5, y: 0.5, w: 9, h: 4.625,
+            align: "center", valign: "middle",
+            fontFace: FONT, fontSize: per >= 4 ? 32 : 40, color: "FFFFFF",
+            lineSpacingMultiple: 1.2, fit: "shrink",
+          });
+          sl.addText(sec.name, {
+            x: 0.25, y: 0.15, w: 3, h: 0.4,
+            align: "left", valign: "top",
+            fontFace: FONT, fontSize: 14, color: "9A9A9A",
+          });
+        });
+      });
+    });
+
+    pptMsg("만드는 중…");
+    pptx.writeFile({ fileName: "worship-" + norm(w.date) + ".pptx" }).then(function () {
+      pptMsg(missing.length
+        ? "내려받았습니다. songs.js에 없는 곡은 제목 슬라이드만 넣었습니다: " + missing.join(", ")
+        : "내려받았습니다.");
+    }, function (err) {
+      pptMsg("PPT를 만들지 못했습니다: " + (err && err.message ? err.message : err));
+    });
+  }
+
+  $("pptBtn").addEventListener("click", makePpt);
+
+  // 주소에 따라 성도용/관리용 화면 고르기
+  function route() {
+    var q = new URLSearchParams(location.search);
+    if (q.get("view") === "songs") showAdmin(q.get("song"));
+    else showWeek(q.get("date"));
+  }
+
+  route();
 
   var tag = document.createElement("script");
   tag.src = "https://www.youtube.com/iframe_api";
