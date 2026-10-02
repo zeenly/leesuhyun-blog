@@ -385,6 +385,7 @@
   var player = null;
   var playerReady = false;
   var pending = null; // 재생기가 준비되기 전에 요청된 재생
+  var pendingCue = null; // 재생기가 준비되기 전에 요청된 "영상만 넣기" (관리용 곡 열기)
   var apiFailed = false;
 
   // ---- 주일 고르기 ----
@@ -403,6 +404,7 @@
 
     // 재생 멈추고 시작 화면으로
     pending = null;
+    pendingCue = null;
     if (playerReady) player.pauseVideo();
     state.songIdx = 0;
     state.secIdx = -1;
@@ -632,6 +634,7 @@
   function load(req) {
     if (apiFailed) { showApiFailed(); return; }
     hideNotice();
+    pendingCue = null;
     if (!playerReady) { pending = req; return; }
     player.loadVideoById(req);
   }
@@ -761,6 +764,7 @@
         onReady: function () {
           playerReady = true;
           if (pending) { var p = pending; pending = null; player.loadVideoById(p); }
+          else if (pendingCue) { var c = pendingCue; pendingCue = null; player.cueVideoById(c); }
         },
         onStateChange: function (e) {
           if (e.data === YT.PlayerState.ENDED) onSegmentEnd();
@@ -820,6 +824,7 @@
 
   function showAdmin(title) {
     pending = null;
+    pendingCue = null;
     if (playerReady) player.pauseVideo();
     state.secIdx = -1;
     state.full = false;
@@ -900,12 +905,24 @@
     if (prev) sel.value = prev;
   }
 
+  // 재생하지 않고 재생기에 그 곡 영상만 넣어 둠 (첫 구간 시작 위치)
+  // 재생기는 하나라서, 안 넣으면 직전에 열었던 곡 영상이 그대로 남음
+  function cueSong(song) {
+    if (!song.videoId || apiFailed) return;
+    var req = { videoId: song.videoId };
+    if (song.sections.length) req.startSeconds = song.sections[0].start;
+    pending = null;
+    if (!playerReady) { pendingCue = req; return; }
+    player.cueVideoById(req);
+  }
+
   function openAdminSong(title) {
     var song = findSong(title);
     var st = songStats().stats[norm(title)];
     songs = [song];
     state.songIdx = 0;
     renderCard();
+    cueSong(song);
     $("cardDate").textContent = st && st.last ? "마지막: " + st.last : "아직 안 부른 곡";
     $("cardCount").textContent = st ? st.count + "번 부름" : "";
     $("nextBtn").hidden = true;
