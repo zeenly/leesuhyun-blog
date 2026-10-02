@@ -2,16 +2,16 @@
 //
 // 곡 하나의 모양:
 // {
-//   title: "곡 제목",            // week.js에 적는 제목과 글자 하나까지 같아야 합니다
+//   title: "곡 제목",            // weeks.js에 적는 제목과 글자 하나까지 같아야 합니다
 //   videoId: "유튜브 영상 ID",     // https://youtu.be/XXXX 의 XXXX 부분
 //   sections: [
-//     { name: "1절", start: 23, end: 68, lines: ["가사 첫 줄", "둘째 줄"], auto: true },
+//     { name: "1절", start: 23, end: 68, lines: ["가사 첫 줄", "둘째 줄"] },
 //   ],
 // }
 //
 // - start/end는 초 단위입니다. 1:08 → 68 (분 × 60 + 초)
-// - auto: true 인 구간만 "시작"을 눌렀을 때 자동으로 재생됩니다.
-//   자동재생 순서는 이름 기준으로 1절 → 후렴 앞 → 후렴 → 브릿지 → 태그 입니다.
+// - 첫 구간은 1절로 적습니다. "시작"과 "다음 곡"은 첫 구간을 재생하고,
+//   "전체 듣기"는 가장 이른 구간의 시작 시각부터 영상 끝까지 재생합니다.
 
 const SONGS = [
   {
@@ -19,7 +19,7 @@ const SONGS = [
     videoId: "O66SLvLJWNY",
     sections: [
       {
-        name: "1절", start: 23, end: 68, auto: true, // 0:23~1:08
+        name: "1절", start: 23, end: 68, // 0:23~1:08
         lines: [
           "주 예수보다 더 귀한 것은 없네",
           "이 세상 부귀와 바꿀 수 없네",
@@ -27,7 +27,7 @@ const SONGS = [
         ],
       },
       {
-        name: "2절", start: 71, end: 117, auto: false, // 1:11~1:57
+        name: "2절", start: 71, end: 117, // 1:11~1:57
         lines: [
           "주 예수보다 더 귀한 것은 없네",
           "이 세상 명예와 바꿀 수 없네",
@@ -35,7 +35,7 @@ const SONGS = [
         ],
       },
       {
-        name: "3절", start: 164, end: 209, auto: false, // 2:44~3:29
+        name: "3절", start: 164, end: 209, // 2:44~3:29
         lines: [
           "주 예수보다 더 귀한 것은 없네",
           "이 세상 행복과 바꿀 수 없네",
@@ -43,7 +43,7 @@ const SONGS = [
         ],
       },
       {
-        name: "후렴", start: 119, end: 161, auto: true, // 1:59~2:41
+        name: "후렴", start: 119, end: 161, // 1:59~2:41
         lines: [
           "세상 즐거움 다 버리고 세상 자랑 다 버렸네",
           "주 예수보다 더 귀한 것은 없네 예수 밖에는 없네",
@@ -57,7 +57,7 @@ const SONGS = [
     videoId: "9vS0aGxVHjk",
     sections: [
       {
-        name: "1절", start: 17, end: 48, auto: true, // 0:17~0:48
+        name: "1절", start: 17, end: 48, // 0:17~0:48
         lines: [
           "전능하신 나의 주 하나님은",
           "능치 못하실 일 전혀 없네",
@@ -66,7 +66,7 @@ const SONGS = [
         ],
       },
       {
-        name: "2절", start: 49, end: 78, auto: false, // 0:49~1:18
+        name: "2절", start: 49, end: 78, // 0:49~1:18
         lines: [
           "신실하신 나의 주 하나님은",
           "우리의 모든 괴로움 바꿀 수 있네",
@@ -75,7 +75,7 @@ const SONGS = [
         ],
       },
       {
-        name: "후렴", start: 79, end: 109, auto: true, // 1:19~1:49
+        name: "후렴", start: 79, end: 109, // 1:19~1:49
         lines: [
           "주의 말씀 의지하여 깊은 곳에 그물 던져",
           "오늘 그가 놀라운 일을 이루시는 것 보라",
@@ -91,7 +91,7 @@ const SONGS = [
     videoId: "To9WjSWeDB0",
     sections: [
       {
-        name: "1절", start: 16, end: 46, auto: true, // 0:16~0:46
+        name: "1절", start: 16, end: 46, // 0:16~0:46
         lines: [
           "온 땅의 주인 되신 주님이",
           "내 이름 아시며 상한 맘 돌보네",
@@ -100,7 +100,7 @@ const SONGS = [
         ],
       },
       {
-        name: "2절", start: 101, end: 131, auto: false, // 1:41~2:11
+        name: "2절", start: 101, end: 131, // 1:41~2:11
         lines: [
           "주님은 나의 죄를 보시고",
           "사랑의 눈으로 날 일으키시네",
@@ -109,14 +109,14 @@ const SONGS = [
         ],
       },
       {
-        name: "후렴 앞", start: 48, end: 64, auto: true, // 0:48~1:04
+        name: "후렴 앞", start: 48, end: 64, // 0:48~1:04
         lines: [
           "나로 인함이 아닌 주가 행하신 일로",
           "나의 행함이 아닌 오직 주로 인하여",
         ],
       },
       {
-        name: "후렴", start: 65, end: 93, auto: true, // 1:05~1:33
+        name: "후렴", start: 65, end: 93, // 1:05~1:33
         lines: [
           "나는 오늘 피었다 지는 이름 없는 꽃과 같네",
           "바다에 이는 파도 안개와 같지만",
@@ -125,7 +125,7 @@ const SONGS = [
         ],
       },
       {
-        name: "태그", start: 289, end: 322, auto: true, // 4:49~5:22
+        name: "태그", start: 289, end: 322, // 4:49~5:22
         lines: [
           "나 오직 주의 것 나 오직 주의 것",
           "나 오직 주의 것 나 오직 주의 것",
