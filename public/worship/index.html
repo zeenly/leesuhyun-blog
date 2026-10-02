@@ -207,6 +207,13 @@
   .ppt-form { display: grid; gap: 10px; }
   .ppt-form label { display: grid; gap: 4px; font-size: 15px; color: var(--muted); }
   .ppt-form select { font: inherit; font-size: 18px; min-height: 48px; border-radius: 12px; border: 1px solid var(--line); background: var(--card); color: var(--text); padding: 0 12px; }
+  .song-search { display: block; margin: 0 0 8px; }
+  .song-search input {
+    width: 100%; font: inherit; font-size: 18px; min-height: 48px;
+    border-radius: 12px; border: 1px solid var(--line); background: var(--card); color: var(--text); padding: 0 14px;
+  }
+  #songSearchMsg { font-size: 15px; color: var(--muted); margin: 0 0 10px; min-height: 1.5em; }
+  #songSearchMsg strong { color: var(--text); }
   #pptMsg { font-size: 15px; color: var(--muted); min-height: 1.5em; margin: 0; }
 
   #archive { margin-top: 32px; }
@@ -284,6 +291,10 @@
   <section id="admin" hidden>
     <h1>곡 목록</h1>
     <div class="notice" id="adminUnknown" hidden></div>
+    <label class="song-search">
+      <input type="search" id="songSearch" placeholder="곡 제목 검색 (띄어쓰기 상관없음)" autocomplete="off" enterkeyhint="search">
+    </label>
+    <p id="songSearchMsg"></p>
     <table class="songs-table">
       <thead><tr><th>곡 제목</th><th>부른 횟수</th><th>마지막 주일</th><th>흐름</th></tr></thead>
       <tbody id="songRows"></tbody>
@@ -872,6 +883,7 @@
     tbody.innerHTML = "";
     rows.forEach(function (row) {
       var tr = document.createElement("tr");
+      tr.dataset.key = searchKey(row.song.title);
       var td = document.createElement("td");
       var a = document.createElement("a");
       a.href = adminUrl(row.song.title);
@@ -892,6 +904,7 @@
       });
       tbody.appendChild(tr);
     });
+    applySearch();
 
     var sel = $("pptWeek");
     var prev = sel.value;
@@ -915,6 +928,37 @@
     if (!playerReady) { pendingCue = req; return; }
     player.cueVideoById(req);
   }
+
+  // 제목 검색: 띄어쓰기·문장부호·대소문자 무시, 제목 일부만 넣어도 찾음
+  function searchKey(t) {
+    return String(t || "").toLowerCase().replace(/[\s.,!?'"\u201C\u201D\u2018\u2019()\[\]\-~·:;]/g, "");
+  }
+
+  function applySearch() {
+    var raw = norm($("songSearch").value);
+    var q = searchKey(raw);
+    var rows = $("songRows").children;
+    var shown = 0;
+    Array.prototype.forEach.call(rows, function (tr) {
+      var on = !q || tr.dataset.key.indexOf(q) !== -1;
+      tr.hidden = !on;
+      if (on) shown++;
+    });
+    var msg = $("songSearchMsg");
+    msg.textContent = "";
+    if (!q) {
+      msg.textContent = "등록된 곡 " + rows.length + "곡";
+    } else if (shown) {
+      msg.textContent = "\u201C" + raw + "\u201D 검색 결과 " + shown + "곡 (전체 " + rows.length + "곡)";
+    } else {
+      var b = document.createElement("strong");
+      b.textContent = "\u201C" + raw + "\u201D은(는) 등록된 곡이 아닙니다.";
+      msg.appendChild(b);
+      msg.appendChild(document.createTextNode(" 새 곡이면 md에 구간 시각·가사·흐름까지 모두 적어 주세요."));
+    }
+  }
+
+  $("songSearch").addEventListener("input", applySearch);
 
   function openAdminSong(title) {
     var song = findSong(title);
