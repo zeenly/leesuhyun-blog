@@ -1,7 +1,7 @@
 ---
 import Layout from "@layouts/Layout.astro";
 import Container from "@components/Container.astro";
-import { SITE, HOME, SOCIALS, CONSULT_URL, CHURCH_URL } from "@consts";
+import { SITE, HOME, SOCIALS } from "@consts";
 import ArrowCard from "@components/ArrowCard.astro";
 import Link from "@components/Link.astro";
 import { getCollection } from "astro:content";
@@ -27,15 +27,15 @@ const projects: CollectionEntry<"projects">[] = (
       <div class="space-y-16">
         <section>
           <article class="space-y-4">
-            <p>영어를 가르칩니다.</p>
             <p>
-              <a href="/class/class-principles">공부가 안 되던 환경을 진단하고 잘 되는 구조를 설계합니다.</a>
+              김을 수출합니다. 이천의 재원글로벌넷에서 수출과 영업을 맡고 있습니다.
+              무역 실무와 일본어·영어 공부를 기록하고, 주일에는 씨앗교회 예배를 만듭니다.
             </p>
-            <p>
-              문의는
-              <a href={CONSULT_URL} target="_blank" rel="noopener noreferrer">상담 문의</a>로 부탁 드립니다.<br />
-              <a href={CHURCH_URL} target="_blank" rel="noopener noreferrer">씨앗교회</a>에서 미디어팀·찬양팀 사역을 하고 있습니다.
+            <p lang="en">
+              Suhyun Lee. I work in export at Jaewon Global Net (Good&amp;Well), a
+              Korean seaweed manufacturer in Icheon.
             </p>
+            <p lang="ja">韓国・利川の海苔メーカー、ジェウォン・グローバルネットで輸出を担当しています。</p>
           </article>
         </section>
 
@@ -92,7 +92,6 @@ const projects: CollectionEntry<"projects">[] = (
               })
             }
           </ul>
-          <p class="text-sm text-foreground/70">평일 저녁 회신</p>
         </section>
       </div>
     </aside>

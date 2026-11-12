@@ -1,7 +1,7 @@
 import { defineCollection } from "astro:content";
 import { z } from "astro/zod";
 import { glob } from 'astro/loaders';
-import { CATEGORIES } from "./consts";
+import { CATEGORIES, LANGS } from "./consts";
 
 const blog = defineCollection({
   // A post is either `name.md` or `name/index.md` (for posts with images);
@@ -17,6 +17,7 @@ const blog = defineCollection({
     // Optional. Without a description, the first paragraph of the post is used.
     description: z.string().optional(),
     draft: z.boolean().default(false),
+    lang: z.enum(LANGS).default("ko"),
     tags: z.array(z.string()).optional(),
   }),
 });
