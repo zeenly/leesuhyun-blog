@@ -49,7 +49,7 @@ export function postDescription(post: CollectionEntry<"blog">, maxLength = 160) 
   return text.length > maxLength ? `${text.slice(0, maxLength - 1).trimEnd()}…` : text;
 }
 
-// Blog posts live under their category: /class/my-post
+// Blog posts live under their category: /trade/my-post
 export function postHref(post: CollectionEntry<"blog">) {
   return `${categoryHref(post.data.category)}/${post.id}`;
 }

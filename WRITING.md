@@ -8,13 +8,13 @@
 파일 이름이 글 주소가 됩니다.
 
 - 영문 소문자, 숫자, 하이픈(`-`)만 씁니다. 띄어쓰기와 한글은 쓰지 않습니다.
-  - 좋은 예: `reading-habits.md`, `2026-exam-review.md`
-  - 나쁜 예: `Reading Habits.md`, `독서습관.md`
+  - 좋은 예: `incoterms-fob-cif.md`, `jlpt-n2-review.md`
+  - 나쁜 예: `Incoterms FOB.md`, `인코텀즈.md`
 - `_`로 시작하는 파일과 폴더는 사이트에 올라가지 않습니다. (`_template.md`가 그래서 보이지 않습니다.)
 - 이미 있는 글과 같은 이름은 쓰지 않습니다.
 
 글 주소는 `/카테고리/파일이름`입니다.
-예: `reading-habits.md`의 category가 `Read`라면 → `https://leesuhyun.com/read/reading-habits`
+예: `incoterms-fob-cif.md`의 category가 `Trade`라면 → `https://leesuhyun.com/trade/incoterms-fob-cif`
 
 ## 2. 맨 위 네 줄(frontmatter) 쓰기
 
@@ -24,7 +24,7 @@
 ---
 title: "글 제목"
 date: "2026-01-01"
-category: Class
+category: Trade
 draft: false
 ---
 
@@ -35,11 +35,12 @@ draft: false
 |---|---|---|
 | `title` | 예 | 글 제목. 큰따옴표로 감쌉니다. |
 | `date` | 예 | 글 날짜. `"YYYY-MM-DD"` 형식. 목록은 이 날짜 순서로 정렬됩니다. |
-| `category` | 예 | `Class`, `Read`, `Life`, `Note` 중 하나. 대소문자까지 그대로 씁니다. |
+| `category` | 예 | `Trade`(무역 실무), `Language`(일본어·영어), `Life`, `Note` 중 하나. 대소문자까지 그대로 씁니다. |
 | `draft` | 아니오 | `true`로 두면 사이트에 올라가지 않습니다(임시 저장). 생략하면 `false`입니다. |
 
 필요할 때만 추가하는 항목:
 
+- `lang: en` 또는 `lang: ja` — 영어나 일본어로 쓴 글에만 씁니다. 목록에서 제목 앞에 `EN`/`JA` 표시가 붙습니다. 생략하면 한국어(`ko`)입니다.
 - `description: "한두 문장 요약"` — 목록과 검색 결과에 보이는 요약입니다. 생략하면 본문 첫 문단이 자동으로 쓰입니다.
 - `tags:` — 태그 목록입니다. 쓰는 방법:
   ```md
@@ -56,7 +57,7 @@ draft: false
 2. `src` → `content` → `blog` 폴더로 들어갑니다.
 3. 오른쪽 위 **Add file** → **Create new file**을 누릅니다.
    - 이미 컴퓨터에 만들어 둔 파일이 있으면 **Upload files**로 끌어다 놓아도 됩니다.
-4. 파일 이름 칸에 `reading-habits.md`처럼 이름을 적고, 내용을 붙여 넣습니다.
+4. 파일 이름 칸에 `incoterms-fob-cif.md`처럼 이름을 적고, 내용을 붙여 넣습니다.
 5. **Commit changes...** 를 누르고, `main` 브랜치에 바로 커밋합니다.
 
 `main`에 커밋되면 배포가 다시 실행되어 몇 분 안에 사이트에 반영됩니다.
@@ -67,17 +68,24 @@ draft: false
 
 ```
 src/content/blog/
-├── reading-habits.md          ← 이미지 없는 글
-└── classroom-tour/            ← 이미지 있는 글
+├── incoterms-fob-cif.md       ← 이미지 없는 글
+└── container-loading/         ← 이미지 있는 글
     ├── index.md
-    └── board.jpg
+    └── pallet.jpg
 ```
 
-- 폴더 이름이 글 주소가 됩니다. (`classroom-tour/index.md` → `/class/classroom-tour`)
+- 폴더 이름이 글 주소가 됩니다. (`container-loading/index.md` → `/trade/container-loading`)
 - 본문에서 이미지는 `./`로 시작하는 상대 경로로 넣습니다.
   ```md
-  ![칠판에 적은 끊어 읽기 기호](./board.jpg)
+  ![팔레트에 쌓은 김 박스](./pallet.jpg)
   ```
 - GitHub에서는 `blog` 폴더에서 **Add file → Upload files**로 이미지와 `index.md`를 함께 올리면 됩니다.
-  웹에서 새 폴더를 만들 때는 **Create new file**의 파일 이름 칸에 `classroom-tour/index.md`처럼 `/`를 넣으면 폴더가 같이 만들어집니다.
+  웹에서 새 폴더를 만들 때는 **Create new file**의 파일 이름 칸에 `container-loading/index.md`처럼 `/`를 넣으면 폴더가 같이 만들어집니다.
 - 같은 이름으로 `이름.md`와 `이름/index.md`를 둘 다 만들지 마세요. 주소가 겹칩니다.
+
+## 5. 올리지 않는 것
+
+회사 소속이 드러나는 사이트입니다. 아래는 올리지 않습니다.
+
+- 회사 내부 정보: 거래처 이름, 단가, 계약 조건, 내부 문서
+- 정치·시사 글

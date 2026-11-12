@@ -13,6 +13,9 @@ const { entry } = Astro.props as {
 const description =
   entry.collection === "blog" ? postDescription(entry) : entry.data.description;
 
+const lang = entry.collection === "blog" ? entry.data.lang : undefined;
+const langLabel = lang && lang !== "ko" ? lang.toUpperCase() : undefined;
+
 const href =
   entry.collection === "blog" ? postHref(entry) : `/${entry.collection}/${entry.id}`;
 ---
@@ -22,7 +25,14 @@ const href =
   class="not-prose group relative flex flex-nowrap rounded-lg border border-foreground/15 px-4 py-3 pr-10 transition-colors duration-300 ease-in-out hover:bg-foreground/5 hover:text-heading focus-visible:bg-foreground/5 focus-visible:text-heading"
 >
   <div class="flex flex-1 flex-col truncate">
-    <div class="font-semibold">
+    <div class="font-semibold" lang={lang}>
+      {
+        langLabel && (
+          <span class="mr-1.5 rounded-sm border border-foreground/15 px-1 py-px align-middle text-xs font-normal">
+            {langLabel}
+          </span>
+        )
+      }
       {entry.data.title}
     </div>
     <div class="text-sm">

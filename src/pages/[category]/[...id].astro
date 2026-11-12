@@ -89,7 +89,7 @@ const { Content, headings } = await render(post);
       }
     </div>
     {headings.length > 0 && <TableOfContents headings={headings} />}
-    <article class="animate">
+    <article class="animate" lang={post.data.lang}>
       <Content />
       <div class="mt-24">
         <PostNavigation prevPost={prevPost} nextPost={nextPost} />
