@@ -81,6 +81,11 @@
   }
   #intro ol li { margin: 6px 0; }
   #startBtn { width: 100%; min-height: 64px; font-size: 24px; }
+  #loopStartBtn { width: 100%; margin-top: 10px; font-size: 19px; }
+
+  /* 전체 곡 반복 */
+  .loop-toggle { display: block; width: 100%; margin-top: 10px; font-size: 18px; }
+  .loop-toggle.on { border-color: var(--accent); border-width: 2px; color: var(--accent); font-weight: 700; }
 
   /* 곡 카드 */
   .card {
@@ -200,7 +205,12 @@
   #admin .notice ul { margin: 6px 0 0; padding-left: 1.2em; }
   .songs-table { width: 100%; border-collapse: collapse; font-size: 15px; background: var(--card); border-radius: 12px; overflow: hidden; }
   .songs-table th, .songs-table td { padding: 10px 8px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
-  .songs-table th { font-size: 13px; color: var(--muted); font-weight: 700; white-space: nowrap; }
+  .songs-table th { font-size: 13px; color: var(--muted); font-weight: 700; white-space: nowrap; padding: 0; }
+  .songs-table th button {
+    width: 100%; min-height: 44px; padding: 0 8px; border: 0; border-radius: 0; background: transparent;
+    font: inherit; font-size: 13px; font-weight: 700; color: var(--muted); text-align: inherit; white-space: nowrap;
+  }
+  .songs-table th button.on { color: var(--accent); }
   .songs-table td:nth-child(n+2), .songs-table th:nth-child(n+2) { text-align: center; white-space: nowrap; }
   .songs-table td a { color: var(--accent); font-weight: 700; font-size: 16px; }
   .songs-table td.dim { color: var(--muted); }
@@ -215,6 +225,13 @@
   #songSearchMsg { font-size: 15px; color: var(--muted); margin: 0 0 10px; min-height: 1.5em; }
   #songSearchMsg strong { color: var(--text); }
   #pptMsg { font-size: 15px; color: var(--muted); min-height: 1.5em; margin: 0; }
+
+  /* 페이지 번호 */
+  .pager { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin: 14px 0 0; }
+  .pager:empty { display: none; }
+  .pager button { min-width: 44px; min-height: 44px; padding: 0 10px; font-size: 16px; }
+  .pager button.on { background: var(--accent); border-color: var(--accent); color: var(--accent-text); font-weight: 700; }
+  .pager .gap { min-width: 24px; line-height: 44px; text-align: center; color: var(--muted); }
 
   #archive { margin-top: 32px; }
   #archive h3 { font-size: 20px; margin: 0 0 10px; }
@@ -253,6 +270,7 @@
     <p class="notice" id="introNotice" hidden></p>
     <ol id="introList"></ol>
     <button id="startBtn" class="primary">시작</button>
+    <button id="loopStartBtn">전체 곡 반복 듣기</button>
   </section>
 
   <section id="card" class="card" hidden>
@@ -279,12 +297,14 @@
       <button id="replayBtn">이 구간 다시</button>
       <button id="nextBtn" class="primary">다음 곡</button>
     </div>
+    <button id="loopToggle" class="loop-toggle">전체 곡 반복 듣기</button>
     <button id="homeBtn" class="home">처음 화면으로</button>
   </section>
 
   <section id="archive">
     <h3>지난 주일</h3>
     <ul id="archiveList"></ul>
+    <div class="pager" id="archivePager"></div>
   </section>
 
   <!-- 관리용 (?view=songs). 성도용 화면에서는 링크하지 않음 -->
@@ -296,9 +316,14 @@
     </label>
     <p id="songSearchMsg"></p>
     <table class="songs-table">
-      <thead><tr><th>곡 제목</th><th>부른 횟수</th><th>마지막 주일</th><th>흐름</th></tr></thead>
+      <thead><tr>
+        <th><button type="button" data-sort="title">곡 제목</button></th>
+        <th><button type="button" data-sort="count">부른 횟수</button></th>
+        <th><button type="button" data-sort="last">마지막 주일</button></th>
+      </tr></thead>
       <tbody id="songRows"></tbody>
     </table>
+    <div class="pager" id="songPager"></div>
 
     <h2>PPT 내려받기</h2>
     <div class="ppt-form">
@@ -391,13 +416,47 @@
     flowIdx: -1,    // 전체 듣기에서 지금 나오는 flow 항목 (-1: 간주 등)
     ended: false,
     failed: false,
+    loop: false,    // 전체 곡 반복 중
+    loopFails: 0,   // 반복 중 연달아 재생 실패한 곡 수
   };
+
+  var ARCHIVE_PAGE_SIZE = 5;  // 지난 주일 목록 한 페이지
+  var SONG_PAGE_SIZE = 10;    // 곡 목록 한 페이지
+  var archivePage = 1;
 
   var player = null;
   var playerReady = false;
   var pending = null; // 재생기가 준비되기 전에 요청된 재생
   var pendingCue = null; // 재생기가 준비되기 전에 요청된 "영상만 넣기" (관리용 곡 열기)
   var apiFailed = false;
+
+  // ---- 페이지 번호 (1 2 3 … ) ----
+  function renderPager(box, page, total, onSelect) {
+    box.innerHTML = "";
+    if (total <= 1) return;
+    var add = function (label, target, on, aria) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.textContent = label;
+      if (aria) b.setAttribute("aria-label", aria);
+      if (on) { b.className = "on"; b.setAttribute("aria-current", "page"); }
+      b.addEventListener("click", function () { onSelect(target); });
+      box.appendChild(b);
+    };
+    var gap = function () {
+      var g = document.createElement("span");
+      g.className = "gap";
+      g.textContent = "…";
+      box.appendChild(g);
+    };
+    if (page > 1) add("‹", page - 1, false, "이전 페이지");
+    // 처음, 끝, 지금 페이지 앞뒤 2쪽까지 보여 주고 나머지는 … 로 줄임
+    var from = Math.max(1, page - 2), to = Math.min(total, page + 2);
+    if (from > 1) { add("1", 1, page === 1); if (from > 2) gap(); }
+    for (var i = from; i <= to; i++) add(String(i), i, i === page);
+    if (to < total) { if (to < total - 1) gap(); add(String(total), total, page === total); }
+    if (page < total) add("›", page + 1, false, "다음 페이지");
+  }
 
   // ---- 주일 고르기 ----
   function pickWeek(date) {
@@ -421,6 +480,8 @@
     state.secIdx = -1;
     state.full = false;
     state.ended = true;
+    setLoop(false);
+    archivePage = Math.floor(weeks.indexOf(week) / ARCHIVE_PAGE_SIZE) + 1;
 
     $("introDate").textContent = dateText;
     var list = $("introList");
@@ -442,6 +503,7 @@
     $("archive").hidden = false;
     $("admin").hidden = true;
     $("nextBtn").hidden = false;
+    $("loopToggle").hidden = false;
     $("homeBtn").textContent = "처음 화면으로";
     renderArchive();
     document.title = "주일 찬양 예습 · " + dateText;
@@ -454,7 +516,10 @@
   function renderArchive() {
     var ul = $("archiveList");
     ul.innerHTML = "";
-    weeks.forEach(function (w) {
+    var pages = Math.max(1, Math.ceil(weeks.length / ARCHIVE_PAGE_SIZE));
+    archivePage = Math.min(Math.max(1, archivePage), pages);
+    var startAt = (archivePage - 1) * ARCHIVE_PAGE_SIZE;
+    weeks.slice(startAt, startAt + ARCHIVE_PAGE_SIZE).forEach(function (w) {
       var li = document.createElement("li");
       var a = document.createElement("a");
       a.href = weekUrl(w);
@@ -475,6 +540,10 @@
       });
       li.appendChild(a);
       ul.appendChild(li);
+    });
+    renderPager($("archivePager"), archivePage, pages, function (n) {
+      archivePage = n;
+      renderArchive();
     });
   }
 
@@ -652,6 +721,7 @@
 
   // 구간 하나를 재생하고 멈춤
   function playSection(idx) {
+    setLoop(false);
     var song = songs[state.songIdx];
     var s = song.sections[idx];
     state.secIdx = idx;
@@ -682,7 +752,8 @@
     state.failed = false;
     if (!wasFull) renderLyrics();
     markPlaying(start);
-    setStatus("전체 듣기 · " + fmt(start) + (end != null ? "~" + fmt(end) : "부터"));
+    setStatus((state.loop ? "전체 곡 반복 · " + (state.songIdx + 1) + "/" + songs.length + " · " : "") +
+      "전체 듣기 · " + fmt(start) + (end != null ? "~" + fmt(end) : "부터"));
     var req = { videoId: song.videoId, startSeconds: start };
     if (end != null) req.endSeconds = end;
     load(req);
@@ -705,11 +776,54 @@
     playSection(0);
   }
 
+  // ---- 전체 곡 반복: 1번 곡부터 곡마다 전체 듣기, 마지막 곡 다음엔 다시 1번 곡 ----
+  function setLoop(on) {
+    state.loop = on;
+    if (!on) state.loopFails = 0;
+    var b = $("loopToggle");
+    b.classList.toggle("on", on);
+    b.textContent = on ? "전체 곡 반복 끄기" : "전체 곡 반복 듣기";
+    b.setAttribute("aria-pressed", String(on));
+  }
+
+  function loopPlay(songIdx) {
+    // 곡 정보가 없는 곡은 건너뜀 (모두 없으면 멈춤)
+    for (var tries = 0; tries < songs.length; tries++) {
+      var i = (songIdx + tries) % songs.length;
+      var song = songs[i];
+      if (!song.missing && song.sections.length) {
+        state.songIdx = i;
+        state.secIdx = -1;
+        state.full = false;
+        renderCard();
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        playFull(0);
+        return;
+      }
+    }
+    setLoop(false);
+    setStatus("반복할 수 있는 곡이 없습니다");
+  }
+
+  function startLoop(songIdx) {
+    setLoop(true);
+    loopPlay(songIdx);
+  }
+
+  function loopNext() {
+    loopPlay((state.songIdx + 1) % songs.length);
+  }
+
   function onSegmentEnd() {
     if (state.ended) return;
     state.ended = true;
     if (playerReady) player.pauseVideo();
     if (state.full) {
+      if (state.loop) {
+        state.loopFails = 0;
+        loopNext();
+        return;
+      }
       setStatus("전체 듣기 끝");
       return;
     }
@@ -723,14 +837,33 @@
   });
 
   $("nextBtn").addEventListener("click", function () {
+    if (state.loop) { loopNext(); return; }
     startSong(state.songIdx + 1 < songs.length ? state.songIdx + 1 : 0);
   });
 
-  $("startBtn").addEventListener("click", function () {
+  function openCard() {
     $("intro").hidden = true;
     $("card").hidden = false;
     $("archive").hidden = true;
+  }
+
+  $("startBtn").addEventListener("click", function () {
+    openCard();
     startSong(0);
+  });
+
+  $("loopStartBtn").addEventListener("click", function () {
+    openCard();
+    startLoop(0);
+  });
+
+  $("loopToggle").addEventListener("click", function () {
+    if (state.loop) {
+      setLoop(false);
+      setStatus("전체 곡 반복을 껐습니다");
+    } else {
+      startLoop(state.songIdx);
+    }
   });
 
   $("homeBtn").addEventListener("click", function () {
@@ -790,6 +923,15 @@
             : "영상을 재생할 수 없습니다.";
           showNotice(why + " 유튜브에서 직접 들어 주세요" + (s ? " (" + (state.full ? "전체 듣기" : s.name) + " " + fmt(s.start) + "부터)." : "."), song, s && s.start);
           setStatus("");
+          // 반복 중이면 3초 뒤 다음 곡으로 (모든 곡이 실패하면 반복을 멈춤)
+          if (state.loop) {
+            state.loopFails++;
+            if (state.loopFails >= songs.length) {
+              setLoop(false);
+            } else {
+              setTimeout(function () { if (state.loop) loopNext(); }, 3000);
+            }
+          }
         },
       },
     });
@@ -834,6 +976,7 @@
   }
 
   function showAdmin(title) {
+    setLoop(false);
     pending = null;
     pendingCue = null;
     if (playerReady) player.pauseVideo();
@@ -870,41 +1013,8 @@
       warn.appendChild(ul);
     }
 
-    // 마지막으로 부른 주일이 최근인 순서, 안 부른 곡은 맨 아래(제목순)
-    var rows = Object.keys(r.stats).map(function (k) { return r.stats[k]; });
-    rows.sort(function (a, b) {
-      if (a.last && b.last) return a.last < b.last ? 1 : a.last > b.last ? -1 : 0;
-      if (a.last) return -1;
-      if (b.last) return 1;
-      return a.song.title.localeCompare(b.song.title, "ko");
-    });
-
-    var tbody = $("songRows");
-    tbody.innerHTML = "";
-    rows.forEach(function (row) {
-      var tr = document.createElement("tr");
-      tr.dataset.key = searchKey(row.song.title);
-      var td = document.createElement("td");
-      var a = document.createElement("a");
-      a.href = adminUrl(row.song.title);
-      a.textContent = row.song.title;
-      a.addEventListener("click", function (e) {
-        e.preventDefault();
-        history.pushState(null, "", adminUrl(row.song.title));
-        showAdmin(row.song.title);
-        window.scrollTo({ top: 0 });
-      });
-      td.appendChild(a);
-      tr.appendChild(td);
-      [String(row.count), row.last || "—", flowItems(row.song).length ? "있음" : "없음"].forEach(function (t, i) {
-        var c = document.createElement("td");
-        c.textContent = t;
-        if (i === 2 && t === "없음") c.className = "dim";
-        tr.appendChild(c);
-      });
-      tbody.appendChild(tr);
-    });
-    applySearch();
+    songRows = Object.keys(r.stats).map(function (k) { return r.stats[k]; });
+    renderSongTable();
 
     var sel = $("pptWeek");
     var prev = sel.value;
@@ -934,22 +1044,91 @@
     return String(t || "").toLowerCase().replace(/[\s.,!?'"\u201C\u201D\u2018\u2019()\[\]\-~·:;]/g, "");
   }
 
-  function applySearch() {
+  // ---- 곡 목록 표: 검색 → 정렬 → 페이지 ----
+  var songRows = [];
+  var songPage = 1;
+  // 기본: 마지막으로 부른 주일이 최근인 순서
+  var songSort = { key: "last", dir: "desc" };
+  var DEFAULT_DIR = { title: "asc", count: "desc", last: "desc" };
+
+  function byTitle(a, b) { return a.song.title.localeCompare(b.song.title, "ko"); }
+
+  function sortRows(rows) {
+    var sign = songSort.dir === "asc" ? 1 : -1;
+    return rows.slice().sort(function (a, b) {
+      if (songSort.key === "title") return sign * byTitle(a, b);
+      if (songSort.key === "count") return sign * (a.count - b.count) || byTitle(a, b);
+      // 마지막 주일: 한 번도 안 부른 곡은 오름차순·내림차순 모두 맨 아래
+      if (!a.last || !b.last) return (a.last ? -1 : b.last ? 1 : 0) || byTitle(a, b);
+      return sign * (a.last < b.last ? -1 : a.last > b.last ? 1 : 0) || byTitle(a, b);
+    });
+  }
+
+  function renderSortHeaders() {
+    Array.prototype.forEach.call(document.querySelectorAll(".songs-table th button"), function (b) {
+      var on = b.dataset.sort === songSort.key;
+      var base = b.dataset.label || (b.dataset.label = b.textContent);
+      b.classList.toggle("on", on);
+      b.textContent = base + (on ? (songSort.dir === "asc" ? " ▲" : " ▼") : "");
+      b.parentNode.setAttribute("aria-sort", on ? (songSort.dir === "asc" ? "ascending" : "descending") : "none");
+    });
+  }
+
+  Array.prototype.forEach.call(document.querySelectorAll(".songs-table th button"), function (b) {
+    b.addEventListener("click", function () {
+      var key = b.dataset.sort;
+      if (songSort.key === key) songSort.dir = songSort.dir === "asc" ? "desc" : "asc";
+      else songSort = { key: key, dir: DEFAULT_DIR[key] };
+      songPage = 1;
+      renderSongTable();
+    });
+  });
+
+  function renderSongTable() {
     var raw = norm($("songSearch").value);
     var q = searchKey(raw);
-    var rows = $("songRows").children;
-    var shown = 0;
-    Array.prototype.forEach.call(rows, function (tr) {
-      var on = !q || tr.dataset.key.indexOf(q) !== -1;
-      tr.hidden = !on;
-      if (on) shown++;
+    var matched = sortRows(songRows.filter(function (row) {
+      return !q || searchKey(row.song.title).indexOf(q) !== -1;
+    }));
+    var pages = Math.max(1, Math.ceil(matched.length / SONG_PAGE_SIZE));
+    songPage = Math.min(Math.max(1, songPage), pages);
+    var startAt = (songPage - 1) * SONG_PAGE_SIZE;
+
+    var tbody = $("songRows");
+    tbody.innerHTML = "";
+    matched.slice(startAt, startAt + SONG_PAGE_SIZE).forEach(function (row) {
+      var tr = document.createElement("tr");
+      var td = document.createElement("td");
+      var a = document.createElement("a");
+      a.href = adminUrl(row.song.title);
+      a.textContent = row.song.title;
+      a.addEventListener("click", function (e) {
+        e.preventDefault();
+        history.pushState(null, "", adminUrl(row.song.title));
+        showAdmin(row.song.title);
+        window.scrollTo({ top: 0 });
+      });
+      td.appendChild(a);
+      tr.appendChild(td);
+      [String(row.count), row.last || "\u2014"].forEach(function (t) {
+        var c = document.createElement("td");
+        c.textContent = t;
+        tr.appendChild(c);
+      });
+      tbody.appendChild(tr);
     });
+    renderSortHeaders();
+    renderPager($("songPager"), songPage, pages, function (n) {
+      songPage = n;
+      renderSongTable();
+    });
+
     var msg = $("songSearchMsg");
     msg.textContent = "";
     if (!q) {
-      msg.textContent = "등록된 곡 " + rows.length + "곡";
-    } else if (shown) {
-      msg.textContent = "\u201C" + raw + "\u201D 검색 결과 " + shown + "곡 (전체 " + rows.length + "곡)";
+      msg.textContent = "등록된 곡 " + songRows.length + "곡";
+    } else if (matched.length) {
+      msg.textContent = "\u201C" + raw + "\u201D 검색 결과 " + matched.length + "곡 (전체 " + songRows.length + "곡)";
     } else {
       var b = document.createElement("strong");
       b.textContent = "\u201C" + raw + "\u201D은(는) 등록된 곡이 아닙니다.";
@@ -958,7 +1137,10 @@
     }
   }
 
-  $("songSearch").addEventListener("input", applySearch);
+  $("songSearch").addEventListener("input", function () {
+    songPage = 1;
+    renderSongTable();
+  });
 
   function openAdminSong(title) {
     var song = findSong(title);
@@ -970,6 +1152,7 @@
     $("cardDate").textContent = st && st.last ? "마지막: " + st.last : "아직 안 부른 곡";
     $("cardCount").textContent = st ? st.count + "번 부름" : "";
     $("nextBtn").hidden = true;
+    $("loopToggle").hidden = true;
     $("homeBtn").textContent = "곡 목록으로";
     setStatus("");
     document.title = song.title + " · 곡 목록";
@@ -1023,7 +1206,7 @@
       t.addText(song.title, {
         x: 0.5, y: 0, w: 9, h: 5.625,
         align: "center", valign: "middle",
-        fontFace: FONT, fontSize: 48, bold: true, color: "FFFFFF",
+        fontFace: FONT, fontSize: 48, bold: true, color: "FFD700", // 제목은 노란색
       });
       if (song.missing) { missing.push(title); return; }
 
