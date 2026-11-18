@@ -647,6 +647,17 @@
     });
   }
 
+  // 흐름 이름 → 가사를 강조할 구간 이름
+  // 같은 이름의 구간이 있으면 그대로, 없고 끝에 (…)가 붙어 있으면 괄호를 뗀 이름
+  // 예: "후렴(손들고)" → "후렴" (흐름 줄에는 괄호까지 그대로 보임)
+  function sectionNameFor(song, name) {
+    var n = norm(name);
+    var has = function (x) { return song.sections.some(function (s) { return norm(s.name) === x; }); };
+    if (has(n)) return n;
+    var base = norm(n.replace(/\([^()]*\)$/, ""));
+    return base && has(base) ? base : n;
+  }
+
   // 전체 듣기 중 지금 나오는 구간 가사 강조
   function markPlaying(t) {
     var song = songs[state.songIdx];
@@ -659,7 +670,7 @@
         if (t >= items[i].start && t < items[i].end) { idx = i; break; }
       }
       state.flowIdx = idx;
-      activeName = idx >= 0 ? norm(items[idx].name) : null;
+      activeName = idx >= 0 ? sectionNameFor(song, items[idx].name) : null;
       var activeBtn = null;
       Array.prototype.forEach.call($("flow").querySelectorAll("button"), function (b) {
         var on = Number(b.dataset.idx) === idx;
