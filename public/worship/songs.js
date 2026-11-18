@@ -1208,7 +1208,7 @@ const SONGS = [
 
   {
     title: "문들아 머리 들어라",
-    videoId: "yTr51RNJrNY",
+    videoId: "KoV3_3WTlx4",
     flow: [
       { start: 19, end: 40, name: "1절" }, // 0:19~0:40
       { start: 46, end: 67, name: "1절" }, // 0:46~1:07
