@@ -118,6 +118,7 @@
     position: absolute; inset: 0; width: 100%; height: 100%; border: 0;
   }
   .status { text-align: center; color: var(--muted); font-size: 15px; margin-top: 6px; min-height: 1.5em; }
+  .skip { display: block; width: 100%; margin-top: 8px; font-size: 18px; font-weight: 700; border-color: var(--accent); color: var(--accent); }
 
   .notice {
     background: var(--warn-bg);
@@ -280,6 +281,7 @@
     <div class="player-box">
       <div class="player-wrap"><div id="player"></div></div>
       <div class="status" id="status"></div>
+      <button id="skipBtn" class="skip" type="button" hidden>건너뛰기 ▶</button>
     </div>
 
     <div class="notice" id="notice" hidden></div>
@@ -481,6 +483,7 @@
     state.full = false;
     state.ended = true;
     setLoop(false);
+    showSkip(false);
     archivePage = Math.floor(weeks.indexOf(week) / ARCHIVE_PAGE_SIZE) + 1;
 
     $("introDate").textContent = dateText;
@@ -721,8 +724,43 @@
 
   function setStatus(text) { $("status").textContent = text; }
 
+  // ---- 노래 사이 공백(간주 · 기도 · 멘트) ----
+  // 전체 듣기에서 흐름 항목 사이 빈 시간이 GAP_MIN초보다 길면
+  // 전체 곡 반복 듣기는 자동으로 건너뛰고, 한 곡 전체 듣기는 "건너뛰기" 버튼을 보여 줌
+  var GAP_MIN = 3;
+
+  // 지금 시각 t가 공백이면 { target: 다음 항목 시작(없으면 null = 곡 끝), remaining: 남은 초 }
+  function gapAt(song, t) {
+    var items = flowItems(song);
+    if (!items.length || t < items[0].start) return null;
+    for (var i = 0; i < items.length; i++) {
+      if (t >= items[i].start && t < items[i].end) return null;
+      if (items[i].start > t) return { target: items[i].start, remaining: items[i].start - t };
+    }
+    var end = flowEnd(song);
+    if (end == null && playerReady && typeof player.getDuration === "function") end = player.getDuration() || null;
+    if (end == null) return null;
+    return { target: null, remaining: end - t };
+  }
+
+  function showSkip(on) { $("skipBtn").hidden = !on; }
+
+  function skipGap() {
+    if (!playerReady || !state.full || state.ended) return;
+    var song = songs[state.songIdx];
+    var g = gapAt(song, player.getCurrentTime());
+    showSkip(false);
+    if (!g) return;
+    if (g.target == null) { onSegmentEnd(); return; }  // 마지막 노래 뒤 공백 → 곡 끝으로
+    player.seekTo(g.target, true);
+    markPlaying(g.target);
+  }
+
+  $("skipBtn").addEventListener("click", skipGap);
+
   // ---- 재생 ----
   function load(req) {
+    showSkip(false);
     if (apiFailed) { showApiFailed(); return; }
     hideNotice();
     pendingCue = null;
@@ -828,6 +866,7 @@
   function onSegmentEnd() {
     if (state.ended) return;
     state.ended = true;
+    showSkip(false);
     if (playerReady) player.pauseVideo();
     if (state.full) {
       if (state.loop) {
@@ -894,9 +933,14 @@
     if (player.getPlayerState() !== YT.PlayerState.PLAYING) return;
     var t = player.getCurrentTime();
     if (state.full) {
-      var end = flowEnd(songs[state.songIdx]);
+      var song = songs[state.songIdx];
+      var end = flowEnd(song);
       if (end != null && t >= end - 0.2) { onSegmentEnd(); return; }
       markPlaying(t);
+      var g = gapAt(song, t);
+      var longGap = !!g && g.remaining > GAP_MIN;
+      if (longGap && state.loop) { skipGap(); return; }  // 반복 듣기: 노래 구간만
+      showSkip(longGap);
       return;
     }
     var s = songs[state.songIdx].sections[state.secIdx];
@@ -988,6 +1032,7 @@
 
   function showAdmin(title) {
     setLoop(false);
+    showSkip(false);
     pending = null;
     pendingCue = null;
     if (playerReady) player.pauseVideo();
